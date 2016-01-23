@@ -27,7 +27,20 @@ func main() {
 	if *serverMode {
 		fmt.Println("server")
 	} else {
-		fmt.Println("client")
+		if len(os.Args) > 1 && os.Args[1] == "start" {
+			log.Println("starting daemon..")
+			configPath := os.Getenv("HOME") + "/.togepi/data"
+			configStat, configStatErr := os.Stat(configPath)
+			switch {
+			case os.IsNotExist(configStatErr):
+				log.Println("first start, generating configuration..")
+				// get tokens and save to configuration
+			case configStat.IsDir():
+				log.Fatal(configPath + " is a directory")
+			}
+		} else {
+			//share
+		}
 	}
 
 	// Shutting down on SIGINT.
