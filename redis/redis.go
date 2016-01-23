@@ -10,7 +10,8 @@ import (
 
 // Redis contains redis connection data.
 type Redis struct {
-	client *redis.Client
+	client       *redis.Client
+	GlobalSecret string
 }
 
 // NewClient returns new redis client connection.
@@ -32,8 +33,8 @@ func NewClient(host string, db int) (r *Redis, err error) {
 	return
 }
 
-// SetGlobalKey generates and records the global secret key.
-func (r *Redis) SetGlobalKey() error {
+// GenerateGlobalSecret generates and records the global secret key.
+func (r *Redis) GenerateGlobalSecret() error {
 	key, keyErr := util.RandomString(16)
 	if keyErr != nil {
 		return keyErr
@@ -47,10 +48,28 @@ func (r *Redis) SetGlobalKey() error {
 	return nil
 }
 
+// RetrieveGlobalSecret reads the key from redis and stores into the sturcture.
+func (r *Redis) RetrieveGlobalSecret() (err error) {
+	var key string
+	key, err = r.client.Get("secret").Result()
+	if err != nil {
+		return
+	}
+
+	r.GlobalSecret = key
+
+	return
+}
+
 // AddUser adds a new user hash.
 func (r *Redis) AddUser(id, key string) (err error) {
 	err = r.client.HMSet(id, "timestamp", strconv.FormatInt(time.Now().UTC().Unix(), 10), "key", key).Err()
 	return
+}
+
+// KeyExists returns a boolean value telling whether the key exists.
+func (r *Redis) KeyExists(key string) (bool, error) {
+	return r.client.Exists(key).Result()
 }
 
 // Close closes the client connection.

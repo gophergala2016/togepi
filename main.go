@@ -46,20 +46,36 @@ func shutdown() {
 	os.Exit(0)
 }
 
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	if *serverMode {
 		log.Println("starting server")
 		var redisErr error
 		r, redisErr = redis.NewClient(*redisHost, *redisDB)
-		if redisErr != nil {
-			log.Fatal(redisErr)
+		fatal(redisErr)
+
+		sExists, sErr := r.KeyExists("secret")
+		fatal(sErr)
+
+		if !sExists {
+			log.Println("running server for the first time")
+			setErr := r.GenerateGlobalSecret()
+			fatal(setErr)
 		}
+
+		getErr := r.RetrieveGlobalSecret()
+		fatal(getErr)
+
+		fmt.Println("===>>", r.GlobalSecret)
 
 		srv = server.New("/register", *httpPort, r)
 		startErr := srv.Start()
-		if startErr != nil {
-			log.Fatal(startErr)
-		}
+		fatal(startErr)
 	} else {
 		if len(os.Args) > 1 && os.Args[1] == "start" {
 			log.Println("starting daemon")
@@ -71,20 +87,14 @@ func main() {
 				log.Println("first start, generating configuration")
 
 				resp, respErr := http.Get(*serverAddress + "/register")
-				if respErr != nil {
-					log.Fatal(respErr)
-				}
+				fatal(respErr)
 				body, bodyErr := ioutil.ReadAll(resp.Body)
-				if bodyErr != nil {
-					log.Fatal(bodyErr)
-				}
+				fatal(bodyErr)
 				resp.Body.Close()
 
 				var respStruct server.RegResp
 				jsonRespErr := json.Unmarshal(body, &respStruct)
-				if jsonRespErr != nil {
-					log.Fatal(jsonRespErr)
-				}
+				fatal(jsonRespErr)
 
 				fmt.Println(respStruct)
 			case configStat.IsDir():
