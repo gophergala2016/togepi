@@ -1,0 +1,15 @@
+{
+	"ImportPath": "github.com/gophergala2016/togepi",
+	"GoVersion": "go1.5.2",
+	"Deps": [
+		{
+			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
+			"Rev": "f14ad9c78b155f69b480cfa41cb655259baac260"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3",
+			"Comment": "v3.2.28",
+			"Rev": "3f059e5c53cd635382697546e6225f1437e3c5a2"
+		}
+	]
+}
