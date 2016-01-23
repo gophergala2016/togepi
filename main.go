@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 
+	"github.com/gophergala2016/togepi/meta"
 	"github.com/gophergala2016/togepi/redis"
 	"github.com/gophergala2016/togepi/server"
 )
@@ -25,6 +25,7 @@ var (
 var (
 	srv *server.Server
 	r   *redis.Redis
+	md  *meta.Data
 )
 
 func init() {
@@ -94,7 +95,9 @@ func startDaemon() {
 		jsonRespErr := json.Unmarshal(body, &respStruct)
 		fatal(jsonRespErr)
 
-		fmt.Println(respStruct)
+		md.SetUserData(respStruct.UserID, respStruct.UserKey)
+		dataErr := md.CreateDataFile(configPath)
+		fatal(dataErr)
 	case configStat.IsDir():
 		log.Fatal(configPath + " is a directory")
 	}
@@ -105,6 +108,7 @@ func shareFile() {
 }
 
 func main() {
+	md = meta.NewData()
 	if *serverMode {
 		startServer()
 	} else {
