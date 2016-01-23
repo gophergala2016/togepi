@@ -2,6 +2,7 @@ package meta
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -29,6 +30,22 @@ func NewData() *Data {
 func (d *Data) SetUserData(id, key string) {
 	d.UserID = id
 	d.UserKey = key
+}
+
+// ReadDataFile writes a content of the data file into the structure.
+func (d *Data) ReadDataFile(path string) (err error) {
+	var data []byte
+	data, err = ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(data, d)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 // CreateDataFile creates user's data file.

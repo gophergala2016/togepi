@@ -100,6 +100,9 @@ func startDaemon() {
 		fatal(dataErr)
 	case configStat.IsDir():
 		log.Fatal(configPath + " is a directory")
+	default:
+		readDataErr := md.ReadDataFile(configPath)
+		fatal(readDataErr)
 	}
 }
 
