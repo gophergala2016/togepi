@@ -67,6 +67,11 @@ func (r *Redis) AddUser(id, key string) (err error) {
 	return
 }
 
+// GetHashValue retuns hash field's value.
+func (r *Redis) GetHashValue(key, field string) (val string, err error) {
+	return r.client.HGet(key, field).Result()
+}
+
 // KeyExists returns a boolean value telling whether the key exists.
 func (r *Redis) KeyExists(key string) (bool, error) {
 	return r.client.Exists(key).Result()

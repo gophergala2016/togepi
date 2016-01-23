@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -47,9 +48,10 @@ func shutdown() {
 	os.Exit(0)
 }
 
-func fatal(err error) {
+func checkError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		shutdown()
 	}
 }
 
@@ -57,23 +59,23 @@ func startServer() {
 	log.Println("starting server")
 	var redisErr error
 	r, redisErr = redis.NewClient(*redisHost, *redisDB)
-	fatal(redisErr)
+	checkError(redisErr)
 
 	sExists, sErr := r.KeyExists("secret")
-	fatal(sErr)
+	checkError(sErr)
 
 	if !sExists {
 		log.Println("running server for the first time")
 		setErr := r.GenerateGlobalSecret()
-		fatal(setErr)
+		checkError(setErr)
 	}
 
 	getErr := r.RetrieveGlobalSecret()
-	fatal(getErr)
+	checkError(getErr)
 
-	srv = server.New("/register", *httpPort, r)
+	srv = server.New("/register", "/validate", *httpPort, r)
 	startErr := srv.Start()
-	fatal(startErr)
+	checkError(startErr)
 }
 
 func startDaemon() {
@@ -86,23 +88,30 @@ func startDaemon() {
 		log.Println("first start, generating configuration")
 
 		resp, respErr := http.Get(*serverAddress + "/register")
-		fatal(respErr)
+		checkError(respErr)
 		body, bodyErr := ioutil.ReadAll(resp.Body)
-		fatal(bodyErr)
+		checkError(bodyErr)
 		resp.Body.Close()
 
 		var respStruct server.RegResp
 		jsonRespErr := json.Unmarshal(body, &respStruct)
-		fatal(jsonRespErr)
+		checkError(jsonRespErr)
 
 		md.SetUserData(respStruct.UserID, respStruct.UserKey)
 		dataErr := md.CreateDataFile(configPath)
-		fatal(dataErr)
+		checkError(dataErr)
 	case configStat.IsDir():
 		log.Fatal(configPath + " is a directory")
 	default:
 		readDataErr := md.ReadDataFile(configPath)
-		fatal(readDataErr)
+		checkError(readDataErr)
+
+		resp, respErr := http.Get(*serverAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
+		checkError(respErr)
+
+		if resp.StatusCode != http.StatusOK {
+			checkError(errors.New("invalid user"))
+		}
 	}
 }
 
