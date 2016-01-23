@@ -52,56 +52,66 @@ func fatal(err error) {
 	}
 }
 
+func startServer() {
+	log.Println("starting server")
+	var redisErr error
+	r, redisErr = redis.NewClient(*redisHost, *redisDB)
+	fatal(redisErr)
+
+	sExists, sErr := r.KeyExists("secret")
+	fatal(sErr)
+
+	if !sExists {
+		log.Println("running server for the first time")
+		setErr := r.GenerateGlobalSecret()
+		fatal(setErr)
+	}
+
+	getErr := r.RetrieveGlobalSecret()
+	fatal(getErr)
+
+	srv = server.New("/register", *httpPort, r)
+	startErr := srv.Start()
+	fatal(startErr)
+}
+
+func startDaemon() {
+	log.Println("starting daemon")
+
+	configPath := os.Getenv("HOME") + "/.togepi/data"
+	configStat, configStatErr := os.Stat(configPath)
+	switch {
+	case os.IsNotExist(configStatErr):
+		log.Println("first start, generating configuration")
+
+		resp, respErr := http.Get(*serverAddress + "/register")
+		fatal(respErr)
+		body, bodyErr := ioutil.ReadAll(resp.Body)
+		fatal(bodyErr)
+		resp.Body.Close()
+
+		var respStruct server.RegResp
+		jsonRespErr := json.Unmarshal(body, &respStruct)
+		fatal(jsonRespErr)
+
+		fmt.Println(respStruct)
+	case configStat.IsDir():
+		log.Fatal(configPath + " is a directory")
+	}
+}
+
+func shareFile() {
+
+}
+
 func main() {
 	if *serverMode {
-		log.Println("starting server")
-		var redisErr error
-		r, redisErr = redis.NewClient(*redisHost, *redisDB)
-		fatal(redisErr)
-
-		sExists, sErr := r.KeyExists("secret")
-		fatal(sErr)
-
-		if !sExists {
-			log.Println("running server for the first time")
-			setErr := r.GenerateGlobalSecret()
-			fatal(setErr)
-		}
-
-		getErr := r.RetrieveGlobalSecret()
-		fatal(getErr)
-
-		fmt.Println("===>>", r.GlobalSecret)
-
-		srv = server.New("/register", *httpPort, r)
-		startErr := srv.Start()
-		fatal(startErr)
+		startServer()
 	} else {
 		if len(os.Args) > 1 && os.Args[1] == "start" {
-			log.Println("starting daemon")
-
-			configPath := os.Getenv("HOME") + "/.togepi/data"
-			configStat, configStatErr := os.Stat(configPath)
-			switch {
-			case os.IsNotExist(configStatErr):
-				log.Println("first start, generating configuration")
-
-				resp, respErr := http.Get(*serverAddress + "/register")
-				fatal(respErr)
-				body, bodyErr := ioutil.ReadAll(resp.Body)
-				fatal(bodyErr)
-				resp.Body.Close()
-
-				var respStruct server.RegResp
-				jsonRespErr := json.Unmarshal(body, &respStruct)
-				fatal(jsonRespErr)
-
-				fmt.Println(respStruct)
-			case configStat.IsDir():
-				log.Fatal(configPath + " is a directory")
-			}
+			startDaemon()
 		} else {
-			//share
+			shareFile()
 		}
 	}
 
