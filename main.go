@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 
@@ -10,11 +14,11 @@ import (
 )
 
 var (
-	serverMode   = flag.Bool("server", false, "run in server mode")
-	httpPort     = flag.Int("http-port", 8011, "HTTP server's port")
-	httpEndpoint = flag.String("http-endpoint", "/togepi", "HTTP server's main endpoint")
-	redisHost    = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
-	redisDB      = flag.Int("redis-db", 0, "Redis DB")
+	serverMode    = flag.Bool("server", false, "run in server mode")
+	serverAddress = flag.String("server-host", "http://127.0.0.1:8011", "togepi server's host")
+	httpPort      = flag.Int("http-port", 8011, "HTTP server's port")
+	redisHost     = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
+	redisDB       = flag.Int("redis-db", 0, "Redis DB")
 )
 
 var (
@@ -39,7 +43,7 @@ func shutdown() {
 func main() {
 	if *serverMode {
 		log.Println("starting server")
-		srv = server.New(*httpEndpoint, *httpPort)
+		srv = server.New("/register", *httpPort)
 		startErr := srv.Start()
 		if startErr != nil {
 			log.Fatal(startErr)
@@ -47,12 +51,30 @@ func main() {
 	} else {
 		if len(os.Args) > 1 && os.Args[1] == "start" {
 			log.Println("starting daemon")
+
 			configPath := os.Getenv("HOME") + "/.togepi/data"
 			configStat, configStatErr := os.Stat(configPath)
 			switch {
 			case os.IsNotExist(configStatErr):
 				log.Println("first start, generating configuration")
-				// get tokens and save to configuration
+
+				resp, respErr := http.Get(*serverAddress + "/register")
+				if respErr != nil {
+					log.Fatal(respErr)
+				}
+				body, bodyErr := ioutil.ReadAll(resp.Body)
+				if bodyErr != nil {
+					log.Fatal(bodyErr)
+				}
+				resp.Body.Close()
+
+				var respStruct server.RegResp
+				jsonRespErr := json.Unmarshal(body, &respStruct)
+				if jsonRespErr != nil {
+					log.Fatal(jsonRespErr)
+				}
+
+				fmt.Println(respStruct)
 			case configStat.IsDir():
 				log.Fatal(configPath + " is a directory")
 			}
