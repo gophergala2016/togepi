@@ -1,14 +1,14 @@
 package server
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strconv"
+
+	"github.com/gophergala2016/togepi/redis"
+	"github.com/gophergala2016/togepi/util"
 )
 
 // Server contains server's settings.
@@ -16,13 +16,15 @@ type Server struct {
 	regEndpoint string
 	port        int
 	listener    net.Listener
+	r           *redis.Redis
 }
 
 // New returns new server.
-func New(regEndpoint string, port int) *Server {
+func New(regEndpoint string, port int, r *redis.Redis) *Server {
 	return &Server{
 		regEndpoint: regEndpoint,
 		port:        port,
+		r:           r,
 	}
 }
 
@@ -32,17 +34,7 @@ type RegResp struct {
 	UserKey string
 }
 
-func randomString(len int) (str string, err error) {
-	b := make([]byte, len)
-	_, err = io.ReadFull(rand.Reader, b)
-	if err != nil {
-		return
-	}
-	str = hex.EncodeToString(b)
-	return
-}
-
-func regHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) regHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	returnError := func(msg string, statusCode int) {
@@ -50,12 +42,12 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf(`{"msg":"%s","status":%d}`, msg, statusCode)))
 	}
 
-	uID, uIDErr := randomString(16)
+	uID, uIDErr := util.RandomString(16)
 	if uIDErr != nil {
 		returnError(uIDErr.Error(), http.StatusInternalServerError)
 	}
 
-	uKey, uKeyErr := randomString(16)
+	uKey, uKeyErr := util.RandomString(16)
 	if uKeyErr != nil {
 		returnError(uKeyErr.Error(), http.StatusInternalServerError)
 	}
@@ -69,13 +61,18 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 		returnError(respBErr.Error(), http.StatusInternalServerError)
 	}
 
+	addErr := s.r.AddUser(uID, uKey)
+	if addErr != nil {
+		returnError(addErr.Error(), http.StatusInternalServerError)
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(respB)
 }
 
 // Start starts the HTTP server.
 func (s *Server) Start() (err error) {
-	http.HandleFunc(s.regEndpoint, regHandler)
+	http.HandleFunc(s.regEndpoint, s.regHandler)
 
 	s.listener, err = net.Listen("tcp", ":"+strconv.Itoa(s.port))
 	if err != nil {

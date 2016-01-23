@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/gophergala2016/togepi/redis"
 	"github.com/gophergala2016/togepi/server"
 )
 
@@ -23,6 +24,7 @@ var (
 
 var (
 	srv *server.Server
+	r   *redis.Redis
 )
 
 func init() {
@@ -36,6 +38,10 @@ func shutdown() {
 		srv.Stop()
 	}
 
+	if r != nil {
+		r.Close()
+	}
+
 	log.Println("terminating process")
 	os.Exit(0)
 }
@@ -43,7 +49,13 @@ func shutdown() {
 func main() {
 	if *serverMode {
 		log.Println("starting server")
-		srv = server.New("/register", *httpPort)
+		var redisErr error
+		r, redisErr = redis.NewClient(*redisHost, *redisDB)
+		if redisErr != nil {
+			log.Fatal(redisErr)
+		}
+
+		srv = server.New("/register", *httpPort, r)
 		startErr := srv.Start()
 		if startErr != nil {
 			log.Fatal(startErr)
