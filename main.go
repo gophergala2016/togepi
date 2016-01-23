@@ -13,6 +13,7 @@ import (
 	"github.com/gophergala2016/togepi/meta"
 	"github.com/gophergala2016/togepi/redis"
 	"github.com/gophergala2016/togepi/server"
+	"github.com/gophergala2016/togepi/util"
 )
 
 var (
@@ -48,34 +49,27 @@ func shutdown() {
 	os.Exit(0)
 }
 
-func checkError(err error) {
-	if err != nil {
-		log.Println(err)
-		shutdown()
-	}
-}
-
 func startServer() {
 	log.Println("starting server")
 	var redisErr error
 	r, redisErr = redis.NewClient(*redisHost, *redisDB)
-	checkError(redisErr)
+	util.CheckError(redisErr, shutdown)
 
 	sExists, sErr := r.KeyExists("secret")
-	checkError(sErr)
+	util.CheckError(sErr, shutdown)
 
 	if !sExists {
 		log.Println("running server for the first time")
 		setErr := r.GenerateGlobalSecret()
-		checkError(setErr)
+		util.CheckError(setErr, shutdown)
 	}
 
 	getErr := r.RetrieveGlobalSecret()
-	checkError(getErr)
+	util.CheckError(getErr, shutdown)
 
 	srv = server.New("/register", "/validate", *httpPort, r)
 	startErr := srv.Start()
-	checkError(startErr)
+	util.CheckError(startErr, shutdown)
 }
 
 func startDaemon() {
@@ -88,29 +82,29 @@ func startDaemon() {
 		log.Println("first start, generating configuration")
 
 		resp, respErr := http.Get(*serverAddress + "/register")
-		checkError(respErr)
+		util.CheckError(respErr, shutdown)
 		body, bodyErr := ioutil.ReadAll(resp.Body)
-		checkError(bodyErr)
+		util.CheckError(bodyErr, shutdown)
 		resp.Body.Close()
 
 		var respStruct server.RegResp
 		jsonRespErr := json.Unmarshal(body, &respStruct)
-		checkError(jsonRespErr)
+		util.CheckError(jsonRespErr, shutdown)
 
 		md.SetUserData(respStruct.UserID, respStruct.UserKey)
 		dataErr := md.CreateDataFile(configPath)
-		checkError(dataErr)
+		util.CheckError(dataErr, shutdown)
 	case configStat.IsDir():
 		log.Fatal(configPath + " is a directory")
 	default:
 		readDataErr := md.ReadDataFile(configPath)
-		checkError(readDataErr)
+		util.CheckError(readDataErr, shutdown)
 
 		resp, respErr := http.Get(*serverAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
-		checkError(respErr)
+		util.CheckError(respErr, shutdown)
 
 		if resp.StatusCode != http.StatusOK {
-			checkError(errors.New("invalid user"))
+			util.CheckError(errors.New("invalid user"), shutdown)
 		}
 	}
 }
