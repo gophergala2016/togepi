@@ -115,7 +115,7 @@ func startDaemon() {
 		dataErr := md.CreateDataFile(configPath)
 		util.CheckError(dataErr, shutdown)
 	case configStat.IsDir():
-		log.Fatal(configPath + " is a directory")
+		util.CheckError(errors.New(configPath+" is a directory"), shutdown)
 	default:
 		readDataErr := md.ReadDataFile(configPath)
 		util.CheckError(readDataErr, shutdown)
