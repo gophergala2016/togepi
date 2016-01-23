@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,21 +14,26 @@ import (
 	"github.com/gophergala2016/togepi/meta"
 	"github.com/gophergala2016/togepi/redis"
 	"github.com/gophergala2016/togepi/server"
+	"github.com/gophergala2016/togepi/tcp"
 	"github.com/gophergala2016/togepi/util"
 )
 
 var (
-	serverMode    = flag.Bool("server", false, "run in server mode")
-	serverAddress = flag.String("server-host", "http://127.0.0.1:8011", "togepi server's host")
-	httpPort      = flag.Int("http-port", 8011, "HTTP server's port")
-	redisHost     = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
-	redisDB       = flag.Int("redis-db", 0, "Redis DB")
+	serverMode        = flag.Bool("server", false, "run in server mode")
+	httpServerAddress = flag.String("http-host", "http://127.0.0.1:8011", "togepi server's host")
+	tcpServerAddress  = flag.String("tcp-host", "127.0.0.1:8012", "togepi server's host")
+	httpPort          = flag.Int("http-port", 8011, "HTTP server's port")
+	tcpPort           = flag.Int("tcp-port", 8012, "TCP server's port")
+	redisHost         = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
+	redisDB           = flag.Int("redis-db", 0, "Redis DB")
 )
 
 var (
 	srv *server.Server
 	r   *redis.Redis
 	md  *meta.Data
+	l   *tcp.Listener
+	cl  *tcp.Client
 )
 
 func init() {
@@ -43,6 +49,14 @@ func shutdown() {
 
 	if r != nil {
 		r.Close()
+	}
+
+	if l != nil {
+		l.Stop()
+	}
+
+	if cl != nil {
+		cl.Close()
 	}
 
 	log.Println("terminating process")
@@ -70,6 +84,12 @@ func startServer() {
 	srv = server.New("/register", "/validate", *httpPort, r)
 	startErr := srv.Start()
 	util.CheckError(startErr, shutdown)
+
+	var lErr error
+	l, lErr = tcp.NewListener(*tcpPort)
+	util.CheckError(lErr, shutdown)
+
+	l.Start()
 }
 
 func startDaemon() {
@@ -81,7 +101,7 @@ func startDaemon() {
 	case os.IsNotExist(configStatErr):
 		log.Println("first start, generating configuration")
 
-		resp, respErr := http.Get(*serverAddress + "/register")
+		resp, respErr := http.Get(*httpServerAddress + "/register")
 		util.CheckError(respErr, shutdown)
 		body, bodyErr := ioutil.ReadAll(resp.Body)
 		util.CheckError(bodyErr, shutdown)
@@ -100,12 +120,16 @@ func startDaemon() {
 		readDataErr := md.ReadDataFile(configPath)
 		util.CheckError(readDataErr, shutdown)
 
-		resp, respErr := http.Get(*serverAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
+		resp, respErr := http.Get(*httpServerAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
 		util.CheckError(respErr, shutdown)
 
 		if resp.StatusCode != http.StatusOK {
 			util.CheckError(errors.New("invalid user"), shutdown)
 		}
+
+		var clErr error
+		cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress)
+		util.CheckError(clErr, shutdown)
 	}
 }
 
@@ -129,8 +153,14 @@ func main() {
 	go func() {
 		intChan := make(chan os.Signal)
 		signal.Notify(intChan, os.Interrupt)
+
 		<-intChan
-		shutdown()
+		go shutdown()
+
+		fmt.Println("\nsend SIGINT again to kill")
+		<-intChan
+
+		os.Exit(1)
 	}()
 
 	select {}
