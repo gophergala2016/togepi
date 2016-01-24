@@ -143,7 +143,25 @@ func startDaemon() {
 }
 
 func shareFile(filePath string) (err error) {
+	configPath := os.Getenv("HOME") + "/.togepi/data"
+	_, err = os.Stat(configPath)
+	if err != nil {
+		return
+	}
+
+	err = md.ReadDataFile(configPath)
+	if err != nil {
+		return
+	}
+
 	err = tcp.SendAndClose(*socketPort, []byte("SHARE::"+filePath))
+	if err != nil {
+		return
+	}
+
+	pathHash := util.Encrypt(filePath, md.UserKey)
+	fmt.Println(md.UserID + pathHash)
+
 	return
 }
 
