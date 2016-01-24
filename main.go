@@ -22,6 +22,7 @@ var (
 	serverMode        = flag.Bool("server", false, "run in server mode")
 	httpServerAddress = flag.String("http-host", "http://127.0.0.1:8011", "togepi server's host")
 	tcpServerAddress  = flag.String("tcp-host", "127.0.0.1:8012", "togepi server's host")
+	socketPort        = flag.Int("socket-port", 8013, "a port to be used for local inter-process communication")
 	httpPort          = flag.Int("http-port", 8011, "HTTP server's port")
 	tcpPort           = flag.Int("tcp-port", 8012, "TCP server's port")
 	redisHost         = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
@@ -41,8 +42,6 @@ func init() {
 }
 
 func shutdown() {
-	log.Println("Shutting down gracefully..")
-
 	if srv != nil {
 		srv.Stop()
 	}
@@ -59,7 +58,6 @@ func shutdown() {
 		cl.Close()
 	}
 
-	log.Println("terminating process")
 	os.Exit(0)
 }
 
@@ -133,10 +131,16 @@ func startDaemon() {
 	util.CheckError(clErr, shutdown)
 
 	cl.HandleServerCommands()
+
+	var lErr error
+	l, lErr = tcp.NewListener(*socketPort)
+	util.CheckError(lErr, shutdown)
+
+	l.AcceptConnections()
 }
 
 func shareFile(filePath string) (err error) {
-
+	err = tcp.SendAndClose(*socketPort, []byte("SHARE::"+filePath))
 	return
 }
 
@@ -160,6 +164,7 @@ func main() {
 
 				shareErr := shareFile(filePath)
 				util.CheckError(shareErr, shutdown)
+				shutdown()
 			}
 		} else {
 			util.CheckError(errors.New("please provide required arguments"), shutdown)
@@ -172,6 +177,7 @@ func main() {
 		signal.Notify(intChan, os.Interrupt)
 
 		<-intChan
+		log.Println("Shutting down gracefully")
 		go shutdown()
 
 		fmt.Println("\nsend SIGINT again to kill")
