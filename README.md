@@ -51,6 +51,13 @@ $ togepi -a
 893eeed69da96fdbe9dc28261c09116a19b1c4868a9aa24c /home/alex.ant/LICENSE
 ```
 
+#### Remove shared files
+
+In case you no longer want a file to be shared with the world, you can remove it from the shared list with the -rm command.
+```bash
+$ togepi -rm e9ad9cf77403719f4e06351355c1781a1ebe57
+```
+
 #### Start your own server
 
 If you want to run your own server, kick it off the following way:
