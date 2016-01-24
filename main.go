@@ -187,7 +187,11 @@ func main() {
 				currentDir, currentDirErr := os.Getwd()
 				util.CheckError(currentDirErr, shutdown)
 
-				shareErr := shareFile(currentDir + "/" + filePath)
+				if string(filePath[0]) != "/" {
+					filePath = currentDir + "/" + filePath
+				}
+
+				shareErr := shareFile(filePath)
 				util.CheckError(shareErr, shutdown)
 				shutdown()
 			}
