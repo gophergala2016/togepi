@@ -69,3 +69,8 @@ And then connect to it the daemon
 $ togepi -start -http-host 127.0.0.1:8011 -tcp-host 127.0.0.1:8012 -redis-host 127.0.0.1:6379
 ```
 The only required service for the server is Redis DB.
+
+#### And BTW!
+5c4ab095a32ff352d301e08ae966b287fcbfe8cf371d998411e2b3a29e2c7ada4366367a5bc7fd1b3ea856c7af14a838
+
+If you wanna know what's in there, don't be shy and try Togepi right now! :)
