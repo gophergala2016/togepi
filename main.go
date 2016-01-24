@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/gophergala2016/togepi/meta"
 	"github.com/gophergala2016/togepi/redis"
@@ -84,23 +85,28 @@ func main() {
 			} else {
 				filePath := os.Args[1]
 
-				fileStat, fileStatErr := os.Stat(filePath)
-				util.CheckError(fileStatErr, shutdown)
+				if len(filePath) == 96 && !strings.Contains(filePath, "/") {
+					requestFile(filePath)
+					shutdown()
+				} else {
+					fileStat, fileStatErr := os.Stat(filePath)
+					util.CheckError(fileStatErr, shutdown)
 
-				if fileStat.IsDir() {
-					util.CheckError(errors.New(filePath+" is a directory"), shutdown)
+					if fileStat.IsDir() {
+						util.CheckError(errors.New(filePath+" is a directory"), shutdown)
+					}
+
+					currentDir, currentDirErr := os.Getwd()
+					util.CheckError(currentDirErr, shutdown)
+
+					if string(filePath[0]) != "/" {
+						filePath = currentDir + "/" + filePath
+					}
+
+					shareErr := shareFile(filePath)
+					util.CheckError(shareErr, shutdown)
+					shutdown()
 				}
-
-				currentDir, currentDirErr := os.Getwd()
-				util.CheckError(currentDirErr, shutdown)
-
-				if string(filePath[0]) != "/" {
-					filePath = currentDir + "/" + filePath
-				}
-
-				shareErr := shareFile(filePath)
-				util.CheckError(shareErr, shutdown)
-				shutdown()
 			}
 		} else {
 			util.CheckError(errors.New("please provide required arguments"), shutdown)

@@ -96,6 +96,12 @@ func startDaemon() {
 	l.AcceptConnections(*httpServerAddress, md.UserID, md.UserKey)
 }
 
+func requestFile(shareHash string) (err error) {
+	fmt.Println("hashhhhhh")
+
+	return
+}
+
 func shareFile(filePath string) (err error) {
 	err = readConfig()
 	if err != nil {
