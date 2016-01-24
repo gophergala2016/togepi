@@ -2,6 +2,24 @@
 
 **Togepi** is a user-friendly tool for sharing files over the network. Sender's/receiver's location doesn't matter for Togepi, neither it cares about your firewall settings, it just works and makes file sharing as easy as never before.
 
+## Super short intro
+
+**A plot: Bill wants to share the "awesome-go-project.zip" file with Alice**
+
+Bill's computer:
+```bash
+$ togepi awesome-go-project.zip
+8cf371d998411e2b3a29e2c7ada4366367a5bc7f
+```
+
+Alice's computer:
+```bash
+$ togepi 8cf371d998411e2b3a29e2c7ada4366367a5bc7f
+file awesome-go-project.zip saved
+```
+
+**Wuala!**
+
 ## Why Togepi?
 
 - **Forget about file location and host address.** For each shared file the application generates a unique hash string which is used to pull the file from the remote machine.
