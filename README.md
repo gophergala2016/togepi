@@ -14,11 +14,19 @@ Take a look at how the application shares files between 3 machines.
 
 ![demo](https://raw.githubusercontent.com/gophergala2016/togepi/master/demo.gif)
 
+![diagram](https://raw.githubusercontent.com/gophergala2016/togepi/master/diagram.gif)
+
 ## Usage
+
+In order to share files, the daemon must be started first:
+```bash
+$ togepi -start &
+```
+By default it will connect to the server running in my cloud, so no need to set up anything.
 
 #### Sharing files
 
-In order to share a file simply provide it's path (can be relative or full) as a single argument
+To share a file simply provide it's path (can be relative or full) as a single argument
 ```bash
 $ togepi path/to/file
 e9ad9cf77403719f4e06351355c1781a1ebe57089e88ac452b892dfea9819fb5a1a937bc34d2934189cf4355249d0186
@@ -38,6 +46,18 @@ Executing Togepi with the -a flag will output a list of shared hashes along with
 ```bash
 $ togepi -a
 2b892dfea9819fb5a1a937bc34d2934189cf4355249d0186 /run/media/alex.ant/HDD/Music/01-chickenfoot-avenida_revolution.mp3
-7ee33d7d62f1e564b080366aa1bc1e4c6ca5b01c838adcf3 /home/alex.ant/demo/02.It's Electric.mp3
+7ee33d7d62f1e564b080366aa1bc1e4c6ca5b01c838adcf3 /home/alex.ant/demo/02.Its Electric.mp3
 893eeed69da96fdbe9dc28261c09116a19b1c4868a9aa24c /home/alex.ant/LICENSE
 ```
+
+#### Start your own server
+
+If you want to run your own server, kick it off the following way:
+```bash
+$ togepi -server
+```
+And then connect to it the daemon
+```bash
+$ togepi -start -http-host 127.0.0.1:8011 -tcp-host 127.0.0.1:8012 -redis-host 127.0.0.1:6379
+```
+The only required service for the server is Redis DB.
