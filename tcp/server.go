@@ -2,16 +2,17 @@ package tcp
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"net"
 	"strconv"
+	"strings"
 )
 
 // Listener contains TCP listener's data.
 type Listener struct {
 	tcpListener *net.TCPListener
 	done        chan bool
+	connections map[string]*net.TCPConn
 }
 
 // NewListener returns new TCP listener.
@@ -31,6 +32,7 @@ func NewListener(port int) (l *Listener, err error) {
 	l = &Listener{
 		tcpListener: tcpListener,
 		done:        make(chan bool),
+		connections: make(map[string]*net.TCPConn),
 	}
 
 	return
@@ -42,7 +44,6 @@ func (l *Listener) Start() {
 		var closed bool
 
 		for {
-			// Waiting for a new client to connect.
 			tcpConn, tcpErr := l.tcpListener.AcceptTCP()
 
 			select {
@@ -65,8 +66,11 @@ func (l *Listener) Start() {
 				continue
 			}
 
-			fmt.Println("===>>", result)
+			clientID := strings.Split(result, "\n")[0]
 
+			log.Printf("client %s connected\n", clientID)
+
+			l.connections[clientID] = tcpConn
 		}
 	}()
 }

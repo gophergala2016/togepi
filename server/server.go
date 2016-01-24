@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -71,6 +72,8 @@ func (s *Server) regHandler(w http.ResponseWriter, r *http.Request) {
 		returnError(addErr.Error(), http.StatusInternalServerError, w)
 		return
 	}
+
+	log.Printf("registering new user: %s\n", uID)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(respB)

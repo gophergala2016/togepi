@@ -126,11 +126,13 @@ func startDaemon() {
 		if resp.StatusCode != http.StatusOK {
 			util.CheckError(errors.New("invalid user"), shutdown)
 		}
-
-		var clErr error
-		cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress)
-		util.CheckError(clErr, shutdown)
 	}
+
+	var clErr error
+	cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress)
+	util.CheckError(clErr, shutdown)
+
+	cl.HandleServerCommands()
 }
 
 func shareFile() {
