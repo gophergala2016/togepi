@@ -18,7 +18,7 @@ type Client struct {
 }
 
 // NewClient returns new TCP client connection.
-func NewClient(clientID, serverAddress string, sockerPort int) (client *Client, err error) {
+func NewClient(clientID, serverAddress string, sockerPort, providerPort int) (client *Client, err error) {
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", serverAddress)
 	if err != nil {
@@ -31,7 +31,7 @@ func NewClient(clientID, serverAddress string, sockerPort int) (client *Client, 
 		return
 	}
 
-	tcpConn.Write(append([]byte(clientID+"::"+strconv.Itoa(sockerPort)), '\n'))
+	tcpConn.Write(append([]byte(clientID+"::"+strconv.Itoa(sockerPort)+"::"+strconv.Itoa(providerPort)), '\n'))
 
 	client = &Client{
 		TCPConn: tcpConn,

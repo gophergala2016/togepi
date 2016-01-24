@@ -143,7 +143,7 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 			tcpConn.Close()
 
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("NOFW::" + clientIP))
+			w.Write([]byte("NOFW::" + clientIP + ":" + conn.ProviderPort))
 		}
 
 	default:

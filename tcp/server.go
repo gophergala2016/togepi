@@ -21,8 +21,9 @@ type Listener struct {
 
 // ClientConn contains client info.
 type ClientConn struct {
-	Conn       *net.TCPConn
-	SocketPort string
+	Conn         *net.TCPConn
+	SocketPort   string
+	ProviderPort string
 }
 
 // NewListener returns new TCP listener.
@@ -88,7 +89,7 @@ func (l *Listener) Start() {
 			}
 
 			resultSl := strings.Split(strings.Split(result, "\n")[0], "::")
-			if len(resultSl) < 2 {
+			if len(resultSl) < 3 {
 				log.Println("failed to process data from client:" + resErr.Error())
 				tcpConn.Close()
 				continue
@@ -96,12 +97,14 @@ func (l *Listener) Start() {
 
 			clientID := resultSl[0]
 			socketPort := resultSl[1]
+			providerPort := resultSl[2]
 
 			log.Printf("client %s connected\n", clientID)
 
 			l.connections[clientID] = &ClientConn{
-				Conn:       tcpConn,
-				SocketPort: socketPort,
+				Conn:         tcpConn,
+				SocketPort:   socketPort,
+				ProviderPort: providerPort,
 			}
 		}
 	}()

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gophergala2016/togepi/redis"
 	"github.com/gophergala2016/togepi/server"
@@ -84,7 +85,7 @@ func startDaemon() {
 	}
 
 	var clErr error
-	cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress, *socketPort)
+	cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress, *socketPort, *providerPort)
 	util.CheckError(clErr, shutdown)
 
 	cl.HandleServerCommands()
@@ -92,6 +93,10 @@ func startDaemon() {
 	var lErr error
 	l, lErr = tcp.NewListener(*socketPort, md)
 	util.CheckError(lErr, shutdown)
+
+	p = server.NewProvider("/provide", *providerPort, md)
+	pErr := p.Start()
+	util.CheckError(pErr, shutdown)
 
 	l.AcceptConnections(*httpServerAddress, md.UserID, md.UserKey)
 }
@@ -104,6 +109,28 @@ func requestFile(shareHash string) (err error) {
 	resp.Body.Close()
 
 	fmt.Println("===>> resp:", string(body))
+
+	bSl := strings.Split(string(body), "::")
+
+	switch bSl[0] {
+	case "NOFW":
+		log.Println("pulling directly from client")
+		fResp, respErr := http.Get("http://" + bSl[1] + "/provide?sh=" + shareHash)
+		util.CheckError(respErr, shutdown)
+		fBody, fBodyErr := ioutil.ReadAll(fResp.Body)
+		util.CheckError(fBodyErr, shutdown)
+		fResp.Body.Close()
+
+		bodyStr := string(fBody)
+		sep := "::"
+		fileName := strings.Split(bodyStr, sep)[0]
+		fileContents := bodyStr[len(fileName)+len(sep):]
+
+		saveErr := util.SaveFile(fileName, []byte(fileContents))
+		util.CheckError(saveErr, shutdown)
+
+		log.Printf("file %s saved\n", fileName)
+	}
 
 	return
 }

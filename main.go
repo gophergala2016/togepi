@@ -22,6 +22,7 @@ var (
 	socketPort        = flag.Int("socket-port", 8013, "a port to be used for local inter-process communication")
 	httpPort          = flag.Int("http-port", 8011, "HTTP server's port")
 	tcpPort           = flag.Int("tcp-port", 8012, "TCP server's port")
+	providerPort      = flag.Int("provider-port", 8014, "provider port")
 	redisHost         = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
 	redisDB           = flag.Int("redis-db", 0, "Redis DB")
 
@@ -31,6 +32,7 @@ var (
 
 var (
 	srv *server.Server
+	p   *server.Provider
 	r   *redis.Redis
 	md  *meta.Data
 	l   *tcp.Listener
@@ -56,6 +58,10 @@ func shutdown() {
 
 	if cl != nil {
 		cl.Close()
+	}
+
+	if p != nil {
+		p.Stop()
 	}
 
 	os.Exit(0)

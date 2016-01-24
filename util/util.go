@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 	"log"
+	"os"
 )
 
 // RandomString returns random HEX of the predefined length.
@@ -36,4 +37,21 @@ func Encrypt(data, key string) string {
 	h := hmac.New(sha256.New, secretKey)
 	h.Write([]byte(data))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// SaveFile saves the data into file.
+func SaveFile(path string, data []byte) (err error) {
+	var f *os.File
+	f, err = os.Create(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	_, err = f.Write(data)
+	if err != nil {
+		return
+	}
+
+	return
 }
