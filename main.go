@@ -29,6 +29,7 @@ var (
 	serverMode = flag.Bool("server", false, "run in server mode")
 	daemonMode = flag.Bool("start", false, "run in daemon mode")
 	showShared = flag.Bool("a", false, "List all shared files")
+	removeHash = flag.String("rm", "", "A shared file to remove")
 )
 
 var (
@@ -84,9 +85,13 @@ func main() {
 
 		shutdown()
 	} else {
+		md = meta.NewData()
+		if *removeHash != "" {
+			rmErr := removeSharedFile(*removeHash)
+			util.CheckError(rmErr, shutdown)
+			shutdown()
+		}
 		if len(os.Args) > 1 {
-			md = meta.NewData()
-
 			if *daemonMode {
 				startDaemon()
 			} else {

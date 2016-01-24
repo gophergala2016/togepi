@@ -86,6 +86,13 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 	var failed bool
 
 	switch action {
+	case "remove":
+		redisErr := s.r.RemoveFileHash(user, hash)
+		if redisErr != nil {
+			returnError(redisErr.Error(), http.StatusBadRequest, w)
+			failed = true
+			break
+		}
 	case "add":
 		redisErr := s.r.AddFileHash(user, hash)
 		if redisErr != nil {

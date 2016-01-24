@@ -78,6 +78,17 @@ func (l *Listener) AcceptConnections(httpServerAddress, userID, userKey string) 
 			var invalidCommand, procFailed bool
 			var procErr error
 			switch command {
+			case "RM":
+				sHash := loadData[32:]
+				l.md.RemoveFile(sHash)
+				resp, procErr := http.Get("http://" + httpServerAddress + "/file?action=remove&hash=" + sHash + "&user=" + userID)
+				if procErr != nil {
+					procFailed = true
+					break
+				}
+				if resp.StatusCode != http.StatusOK {
+					procErr = errors.New("received " + strconv.Itoa(resp.StatusCode) + " status")
+				}
 			case "SHARE":
 				pathHash := util.Encrypt(loadData, userKey)
 				l.md.AddFile(pathHash, loadData)

@@ -54,6 +54,12 @@ func (d *Data) AddFile(hash, path string) {
 	d.RewriteDataFile()
 }
 
+// RemoveFile removes a shared file.
+func (d *Data) RemoveFile(hash string) {
+	delete(d.Files, hash)
+	d.RewriteDataFile()
+}
+
 // RewriteDataFile rewrites the user's data file.
 func (d *Data) RewriteDataFile() {
 	b, marshalErr := json.Marshal(*d)

@@ -146,6 +146,20 @@ func requestFile(shareHash string) (err error) {
 	return
 }
 
+func removeSharedFile(hash string) (err error) {
+	err = readConfig()
+	if err != nil {
+		return
+	}
+
+	err = tcp.SendAndClose(*socketPort, []byte("RM::"+hash))
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func shareFile(filePath string) (err error) {
 	err = readConfig()
 	if err != nil {

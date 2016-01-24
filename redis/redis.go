@@ -103,6 +103,41 @@ func (r *Redis) AddFileHash(key, hash string) (err error) {
 	return
 }
 
+// RemoveFileHash removes file hash from redis.
+func (r *Redis) RemoveFileHash(key, hash string) (err error) {
+	currentValue, err := r.client.HGet(key, "files").Result()
+	if err != nil {
+		return
+	}
+
+	if currentValue == "" {
+		return
+	}
+
+	currentValueSl := strings.Split(currentValue, ",")
+	var newValue string
+	var exists bool
+	for _, v := range currentValueSl {
+		if v != hash {
+			if newValue == "" {
+				newValue = v
+			} else {
+				newValue += "," + v
+			}
+		} else {
+			exists = true
+		}
+	}
+	if exists {
+		err = r.client.HSet(key, "files", newValue).Err()
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 // KeyExists returns a boolean value telling whether the key exists.
 func (r *Redis) KeyExists(key string) (bool, error) {
 	return r.client.Exists(key).Result()
