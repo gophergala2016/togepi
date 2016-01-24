@@ -89,7 +89,7 @@ func startDaemon() {
 	}
 
 	var clErr error
-	cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress, *socketPort, *providerPort)
+	cl, clErr = tcp.NewClient(md, *tcpServerAddress, *socketPort, *providerPort)
 	util.CheckError(clErr, shutdown)
 
 	cl.HandleServerCommands()
@@ -112,7 +112,7 @@ func requestFile(shareHash string) (err error) {
 	util.CheckError(bodyErr, shutdown)
 	resp.Body.Close()
 
-	bSl := strings.Split(string(body), "::")
+	bSl := strings.Split(string(body), "::::")
 
 	switch bSl[0] {
 	case "NOFW":
@@ -129,6 +129,15 @@ func requestFile(shareHash string) (err error) {
 		fileContents := bodyStr[len(fileName)+len(sep):]
 
 		saveErr := util.SaveFile(fileName, []byte(fileContents))
+		util.CheckError(saveErr, shutdown)
+
+		log.Printf("file %s saved\n", fileName)
+	case "FW":
+		fileName := bSl[1]
+		fileContents := []byte(bSl[2])
+		log.Println("pulling through server")
+
+		saveErr := util.SaveFile(fileName, fileContents)
 		util.CheckError(saveErr, shutdown)
 
 		log.Printf("file %s saved\n", fileName)

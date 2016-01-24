@@ -1,11 +1,12 @@
 package server
 
 import (
+	"bufio"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -149,8 +150,48 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		handleFirewall := func() {
-			fmt.Println("++++>> firewall!")
-			//returnError(tcpErr.Error(), http.StatusBadRequest, w)
+			conn.Conn.Write(append([]byte("GET::"+ePath), '\n'))
+
+			tmpReader := bufio.NewReader(conn.Conn)
+
+			result, readErr := tmpReader.ReadBytes('\n')
+			if readErr != nil {
+				returnError(readErr.Error(), http.StatusInternalServerError, w)
+				return
+			}
+
+			fName := strings.Split(string(result), "\n")[0]
+
+			if fName == "ERROR" {
+				returnError("error", http.StatusInternalServerError, w)
+				return
+			}
+
+			result, readErr = tmpReader.ReadBytes('\n')
+			if readErr != nil {
+				returnError(readErr.Error(), http.StatusInternalServerError, w)
+				return
+			}
+
+			fSize, fSizeErr := strconv.ParseInt(strings.Split(string(result), "\n")[0], 10, 64)
+			if fSizeErr != nil {
+				returnError(fSizeErr.Error(), http.StatusInternalServerError, w)
+				return
+			}
+
+			fData := make([]byte, fSize)
+
+			for i := int64(0); i < fSize; i++ {
+				resByte, readErr := tmpReader.ReadByte()
+				if readErr != nil {
+					returnError(readErr.Error(), http.StatusInternalServerError, w)
+					return
+				}
+				fData[i] = resByte
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write(append([]byte("FW::::"+fName+"::::"), fData...))
 		}
 
 		handleDirect := func() {
@@ -158,7 +199,7 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 			tcpConn.Close()
 
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("NOFW::" + clientIP + ":" + conn.ProviderPort))
+			w.Write([]byte("NOFW::::" + clientIP + ":" + conn.ProviderPort))
 		}
 
 		select {

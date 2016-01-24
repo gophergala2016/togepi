@@ -2,11 +2,16 @@ package tcp
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+
+	"github.com/gophergala2016/togepi/meta"
 )
 
 // Client contains TCP client's data.
@@ -15,10 +20,11 @@ type Client struct {
 	close   chan bool
 	ackChan chan bool
 	reader  *bufio.Reader
+	md      *meta.Data
 }
 
 // NewClient returns new TCP client connection.
-func NewClient(clientID, serverAddress string, sockerPort, providerPort int) (client *Client, err error) {
+func NewClient(md *meta.Data, serverAddress string, sockerPort, providerPort int) (client *Client, err error) {
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", serverAddress)
 	if err != nil {
@@ -31,13 +37,14 @@ func NewClient(clientID, serverAddress string, sockerPort, providerPort int) (cl
 		return
 	}
 
-	tcpConn.Write(append([]byte(clientID+"::"+strconv.Itoa(sockerPort)+"::"+strconv.Itoa(providerPort)), '\n'))
+	tcpConn.Write(append([]byte(md.UserID+"::"+strconv.Itoa(sockerPort)+"::"+strconv.Itoa(providerPort)), '\n'))
 
 	client = &Client{
 		TCPConn: tcpConn,
 		close:   make(chan bool),
 		ackChan: make(chan bool),
 		reader:  bufio.NewReader(tcpConn),
+		md:      md,
 	}
 
 	return
@@ -71,8 +78,32 @@ func (c *Client) HandleServerCommands() {
 				}
 			}
 
-			fmt.Println("===>>", string(result))
+			resSl := strings.Split(strings.Split(string(result), "\n")[0], "::")
 
+			command := resSl[0]
+			loadData := resSl[1]
+
+			switch command {
+			case "GET":
+				//TODO: handle errors
+				filePath := c.md.Files[loadData].Path
+				log.Println("uploading file", filePath)
+
+				fileStat, fileStatErr := os.Stat(filePath)
+				if fileStatErr != nil {
+					c.TCPConn.Write(append([]byte("ERROR"), '\n'))
+					break
+				}
+
+				var data []byte
+				data, dataErr := ioutil.ReadFile(filePath)
+				if dataErr != nil {
+					c.TCPConn.Write(append([]byte("ERROR"), '\n'))
+					break
+				}
+
+				c.TCPConn.Write(append([]byte(filepath.Base(filePath)+"\n"+strconv.FormatInt(fileStat.Size(), 10)+"\n"), data...))
+			}
 		}
 	}()
 }
