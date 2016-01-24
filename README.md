@@ -22,7 +22,7 @@ e9ad9cf77403719f4e06351355c1781a1ebe57089e88ac452b892dfea9819fb5a1a937bc34d29341
 
 #### Pulling files
 
-It can't be simler than to provide the "Share Hash"
+It can't be easier than to provide the "Share Hash"
 ```bash
 $ togepi e9ad9cf77403719f4e06351355c1781a1ebe57089e88ac452b892dfea9819fb5a1a937bc34d2934189cf4355249d0186
 file file saved
