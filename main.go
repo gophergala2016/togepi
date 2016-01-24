@@ -75,7 +75,7 @@ func main() {
 		md = meta.NewData()
 		err := readConfig()
 		if err != nil {
-			return
+			util.CheckError(err, shutdown)
 		}
 
 		for k, v := range md.Files {
@@ -91,6 +91,14 @@ func main() {
 				startDaemon()
 			} else {
 				filePath := os.Args[1]
+
+				err := readConfig()
+				if err != nil {
+					util.CheckError(err, shutdown)
+				}
+
+				*tcpServerAddress = md.TCPServer
+				*httpServerAddress = md.HTTPServer
 
 				if len(filePath) == 96 && !strings.Contains(filePath, "/") {
 					requestFile(filePath)

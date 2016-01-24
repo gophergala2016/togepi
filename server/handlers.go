@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gophergala2016/togepi/util"
 )
@@ -133,17 +134,42 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		connected := make(chan bool)
+		var tcpErr error
 		var tcpConn *net.TCPConn
-		tcpConn, tcpErr := net.DialTCP("tcp", nil, tcpAddr)
-		if tcpErr != nil {
+		go func() {
+			tcpConn, tcpErr = net.DialTCP("tcp", nil, tcpAddr)
+			connected <- true
+		}()
+
+		timeout := make(chan bool)
+		go func() {
+			time.Sleep(2 * time.Second)
+			timeout <- true
+		}()
+
+		handleFirewall := func() {
 			fmt.Println("++++>> firewall!")
-			returnError(tcpErr.Error(), http.StatusBadRequest, w)
-		} else {
+			//returnError(tcpErr.Error(), http.StatusBadRequest, w)
+		}
+
+		handleDirect := func() {
 			tcpConn.Write(append([]byte("PING::"), '\n'))
 			tcpConn.Close()
 
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("NOFW::" + clientIP + ":" + conn.ProviderPort))
+		}
+
+		select {
+		case <-timeout:
+			handleFirewall()
+		case <-connected:
+			if tcpErr != nil {
+				handleFirewall()
+			} else {
+				handleDirect()
+			}
 		}
 
 	default:

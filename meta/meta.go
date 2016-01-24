@@ -11,10 +11,12 @@ import (
 
 // Data contains local user's data
 type Data struct {
-	ConfPath string
-	UserID   string
-	UserKey  string
-	Files    map[string]File
+	ConfPath   string
+	TCPServer  string
+	HTTPServer string
+	UserID     string
+	UserKey    string
+	Files      map[string]File
 }
 
 // File contains shared file's info.
@@ -28,6 +30,12 @@ func NewData() *Data {
 	return &Data{
 		Files: make(map[string]File),
 	}
+}
+
+// SetServerData sets server info.
+func (d *Data) SetServerData(tcpHost, httpHost string) {
+	d.TCPServer = tcpHost
+	d.HTTPServer = httpHost
 }
 
 // SetUserData sets user id and secret key.

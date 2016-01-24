@@ -68,6 +68,7 @@ func startDaemon() {
 		util.CheckError(jsonRespErr, shutdown)
 
 		md.SetUserData(respStruct.UserID, respStruct.UserKey)
+		md.SetServerData(*tcpServerAddress, *httpServerAddress)
 		dataErr := md.CreateDataFile(configPath)
 		util.CheckError(dataErr, shutdown)
 	case configStat.IsDir():
@@ -75,6 +76,9 @@ func startDaemon() {
 	default:
 		readDataErr := md.ReadDataFile(configPath)
 		util.CheckError(readDataErr, shutdown)
+
+		*httpServerAddress = md.HTTPServer
+		*tcpServerAddress = md.TCPServer
 
 		resp, respErr := http.Get("http://" + *httpServerAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
 		util.CheckError(respErr, shutdown)
@@ -107,8 +111,6 @@ func requestFile(shareHash string) (err error) {
 	body, bodyErr := ioutil.ReadAll(resp.Body)
 	util.CheckError(bodyErr, shutdown)
 	resp.Body.Close()
-
-	fmt.Println("===>> resp:", string(body))
 
 	bSl := strings.Split(string(body), "::")
 
