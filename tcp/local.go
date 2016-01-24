@@ -89,6 +89,7 @@ func (l *Listener) AcceptConnections(httpServerAddress, userID, userKey string) 
 				if resp.StatusCode != http.StatusOK {
 					procErr = errors.New("received " + strconv.Itoa(resp.StatusCode) + " status")
 				}
+			case "PING":
 			default:
 				invalidCommand = true
 			}

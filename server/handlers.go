@@ -2,8 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/gophergala2016/togepi/util"
 )
@@ -86,7 +89,63 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 		if redisErr != nil {
 			returnError(redisErr.Error(), http.StatusBadRequest, w)
 			failed = true
+			break
 		}
+	case "request":
+		shareHash := r.FormValue("sh")
+
+		uID := shareHash[:32]
+		ePath := shareHash[32:]
+
+		rData, rErr := s.r.GetHashValue(uID, "files")
+		if rErr != nil {
+			returnError(rErr.Error(), http.StatusBadRequest, w)
+			failed = true
+			break
+		}
+
+		filesSl := strings.Split(rData, ",")
+		var exists bool
+		for _, v := range filesSl {
+			if ePath == v {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			returnError("requested file doesn't exist", http.StatusBadRequest, w)
+			return
+		}
+
+		conn, connErr := s.tcpListener.GetConnection(uID)
+		if connErr != nil {
+			returnError(connErr.Error(), http.StatusBadRequest, w)
+			return
+		}
+
+		clientIP := strings.Split(conn.Conn.RemoteAddr().String(), ":")[0]
+
+		var tcpAddr *net.TCPAddr
+		tcpAddr, AddrErr := net.ResolveTCPAddr("tcp4", clientIP+":"+conn.SocketPort)
+		if AddrErr != nil {
+			returnError(AddrErr.Error(), http.StatusBadRequest, w)
+			return
+		}
+
+		var tcpConn *net.TCPConn
+		tcpConn, tcpErr := net.DialTCP("tcp", nil, tcpAddr)
+		if tcpErr != nil {
+			fmt.Println("++++>> firewall!")
+			returnError(tcpErr.Error(), http.StatusBadRequest, w)
+		} else {
+			tcpConn.Write(append([]byte("PING::"), '\n'))
+			tcpConn.Close()
+
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("NOFW::" + clientIP))
+		}
+
 	default:
 		returnError("invalid action", http.StatusBadRequest, w)
 		failed = true
@@ -94,6 +153,4 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 	if failed {
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

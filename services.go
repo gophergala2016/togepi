@@ -33,13 +33,13 @@ func startServer() {
 	getErr := r.RetrieveGlobalSecret()
 	util.CheckError(getErr, shutdown)
 
-	srv = server.New("/register", "/validate", "/file", *httpPort, r)
-	startErr := srv.Start()
-	util.CheckError(startErr, shutdown)
-
 	var lErr error
 	l, lErr = tcp.NewListener(*tcpPort, nil)
 	util.CheckError(lErr, shutdown)
+
+	srv = server.New("/register", "/validate", "/file", *httpPort, r, l)
+	startErr := srv.Start()
+	util.CheckError(startErr, shutdown)
 
 	l.Start()
 }
@@ -84,7 +84,7 @@ func startDaemon() {
 	}
 
 	var clErr error
-	cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress)
+	cl, clErr = tcp.NewClient(md.UserID, *tcpServerAddress, *socketPort)
 	util.CheckError(clErr, shutdown)
 
 	cl.HandleServerCommands()
@@ -97,7 +97,13 @@ func startDaemon() {
 }
 
 func requestFile(shareHash string) (err error) {
-	fmt.Println("hashhhhhh")
+	resp, respErr := http.Get(*httpServerAddress + "/file?action=request&sh=" + shareHash)
+	util.CheckError(respErr, shutdown)
+	body, bodyErr := ioutil.ReadAll(resp.Body)
+	util.CheckError(bodyErr, shutdown)
+	resp.Body.Close()
+
+	fmt.Println("===>> resp:", string(body))
 
 	return
 }

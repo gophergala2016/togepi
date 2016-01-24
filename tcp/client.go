@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 )
 
 // Client contains TCP client's data.
@@ -17,7 +18,7 @@ type Client struct {
 }
 
 // NewClient returns new TCP client connection.
-func NewClient(clientID, serverAddress string) (client *Client, err error) {
+func NewClient(clientID, serverAddress string, sockerPort int) (client *Client, err error) {
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", serverAddress)
 	if err != nil {
@@ -30,7 +31,7 @@ func NewClient(clientID, serverAddress string) (client *Client, err error) {
 		return
 	}
 
-	tcpConn.Write(append([]byte(clientID), '\n'))
+	tcpConn.Write(append([]byte(clientID+"::"+strconv.Itoa(sockerPort)), '\n'))
 
 	client = &Client{
 		TCPConn: tcpConn,

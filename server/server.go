@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gophergala2016/togepi/redis"
+	"github.com/gophergala2016/togepi/tcp"
 )
 
 // Server contains server's settings.
@@ -17,16 +18,18 @@ type Server struct {
 	port             int
 	listener         net.Listener
 	r                *redis.Redis
+	tcpListener      *tcp.Listener
 }
 
 // New returns new server.
-func New(regEndpoint, validateEndpoint, fileEndpoint string, port int, r *redis.Redis) *Server {
+func New(regEndpoint, validateEndpoint, fileEndpoint string, port int, r *redis.Redis, tcpListener *tcp.Listener) *Server {
 	return &Server{
 		regEndpoint:      regEndpoint,
 		validateEndpoint: validateEndpoint,
 		fileEndpoint:     fileEndpoint,
 		port:             port,
 		r:                r,
+		tcpListener:      tcpListener,
 	}
 }
 
