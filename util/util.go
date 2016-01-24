@@ -1,7 +1,9 @@
 package util
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"log"
@@ -26,4 +28,12 @@ func CheckError(err error, handler errorHandler) {
 		log.Println(err)
 		handler()
 	}
+}
+
+// Encrypt encodes the data using SHA-256 + HMAC.
+func Encrypt(data, key string) string {
+	secretKey := []byte(key)
+	h := hmac.New(sha256.New, secretKey)
+	h.Write([]byte(data))
+	return hex.EncodeToString(h.Sum(nil))
 }

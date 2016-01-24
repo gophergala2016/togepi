@@ -2,10 +2,14 @@ package tcp
 
 import (
 	"bufio"
+	"errors"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gophergala2016/togepi/util"
 )
 
 // SendAndClose sends data to specified port and closes the connection.
@@ -30,7 +34,7 @@ func SendAndClose(port int, data []byte) (err error) {
 }
 
 // AcceptConnections handles a connection and disconnects.
-func (l *Listener) AcceptConnections() {
+func (l *Listener) AcceptConnections(httpServerAddress, userID, userKey string) {
 	go func() {
 		var closed bool
 
@@ -53,13 +57,51 @@ func (l *Listener) AcceptConnections() {
 
 			result, resErr := bufio.NewReader(tcpConn).ReadString('\n')
 			if resErr != nil {
-				log.Println("failed to process data from master:" + resErr.Error())
+				log.Println("failed to process local command:" + resErr.Error())
+				tcpConn.Close()
 				continue
 			}
 
-			data := strings.Split(result, "\n")[0]
+			data := strings.Split(strings.Split(result, "\n")[0], "::")
 
-			log.Printf("local command received: %s\n", data)
+			if len(data) < 2 {
+				log.Println("failed to process local command:" + resErr.Error())
+				tcpConn.Close()
+				continue
+			}
+
+			command := data[0]
+			loadData := data[1]
+
+			log.Printf("local %s command received: %s\n", command, loadData)
+
+			var invalidCommand, procFailed bool
+			var procErr error
+			switch command {
+			case "SHARE":
+				pathHash := util.Encrypt(loadData, userKey)
+				l.md.AddFile(pathHash, loadData)
+				resp, procErr := http.Get(httpServerAddress + "/file?action=add&hash=" + pathHash + "&user=" + userID)
+				if procErr != nil {
+					procFailed = true
+					break
+				}
+				if resp.StatusCode != http.StatusOK {
+					procErr = errors.New("received " + strconv.Itoa(resp.StatusCode) + " status")
+				}
+			default:
+				invalidCommand = true
+			}
+
+			if invalidCommand {
+				log.Println("invalid command:" + command)
+				tcpConn.Close()
+				continue
+			} else if procFailed {
+				log.Println("failed to process command:" + procErr.Error())
+				tcpConn.Close()
+				continue
+			}
 
 			tcpConn.Close()
 		}

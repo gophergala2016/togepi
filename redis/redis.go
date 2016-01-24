@@ -2,6 +2,7 @@ package redis
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gophergala2016/togepi/util"
@@ -63,13 +64,43 @@ func (r *Redis) RetrieveGlobalSecret() (err error) {
 
 // AddUser adds a new user hash.
 func (r *Redis) AddUser(id, key string) (err error) {
-	err = r.client.HMSet(id, "timestamp", strconv.FormatInt(time.Now().UTC().Unix(), 10), "key", key).Err()
+	err = r.client.HMSet(id, "timestamp", strconv.FormatInt(time.Now().UTC().Unix(), 10), "key", key, "files", "").Err()
 	return
 }
 
 // GetHashValue retuns hash field's value.
 func (r *Redis) GetHashValue(key, field string) (val string, err error) {
 	return r.client.HGet(key, field).Result()
+}
+
+// AddFileHash adds file hash to redis.
+func (r *Redis) AddFileHash(key, hash string) (err error) {
+	currentValue, err := r.client.HGet(key, "files").Result()
+	if err != nil {
+		return
+	}
+
+	if currentValue == "" {
+		currentValue = hash
+	} else {
+		currentValueSl := strings.Split(currentValue, ",")
+		var exists bool
+		for _, v := range currentValueSl {
+			if v == hash {
+				exists = true
+			}
+		}
+		if !exists {
+			currentValue += "," + hash
+		}
+	}
+
+	err = r.client.HSet(key, "files", currentValue).Err()
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 // KeyExists returns a boolean value telling whether the key exists.

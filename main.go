@@ -79,12 +79,12 @@ func startServer() {
 	getErr := r.RetrieveGlobalSecret()
 	util.CheckError(getErr, shutdown)
 
-	srv = server.New("/register", "/validate", *httpPort, r)
+	srv = server.New("/register", "/validate", "/file", *httpPort, r)
 	startErr := srv.Start()
 	util.CheckError(startErr, shutdown)
 
 	var lErr error
-	l, lErr = tcp.NewListener(*tcpPort)
+	l, lErr = tcp.NewListener(*tcpPort, nil)
 	util.CheckError(lErr, shutdown)
 
 	l.Start()
@@ -95,6 +95,9 @@ func startDaemon() {
 
 	configPath := os.Getenv("HOME") + "/.togepi/data"
 	configStat, configStatErr := os.Stat(configPath)
+
+	md.ConfPath = configPath
+
 	switch {
 	case os.IsNotExist(configStatErr):
 		log.Println("first start, generating configuration")
@@ -133,10 +136,10 @@ func startDaemon() {
 	cl.HandleServerCommands()
 
 	var lErr error
-	l, lErr = tcp.NewListener(*socketPort)
+	l, lErr = tcp.NewListener(*socketPort, md)
 	util.CheckError(lErr, shutdown)
 
-	l.AcceptConnections()
+	l.AcceptConnections(*httpServerAddress, md.UserID, md.UserKey)
 }
 
 func shareFile(filePath string) (err error) {
@@ -145,11 +148,12 @@ func shareFile(filePath string) (err error) {
 }
 
 func main() {
-	md = meta.NewData()
 	if *serverMode {
 		startServer()
 	} else {
 		if len(os.Args) > 1 {
+			md = meta.NewData()
+
 			if os.Args[1] == "start" {
 				startDaemon()
 			} else {
@@ -162,7 +166,10 @@ func main() {
 					util.CheckError(errors.New(filePath+" is a directory"), shutdown)
 				}
 
-				shareErr := shareFile(filePath)
+				currentDir, currentDirErr := os.Getwd()
+				util.CheckError(currentDirErr, shutdown)
+
+				shareErr := shareFile(currentDir + "/" + filePath)
 				util.CheckError(shareErr, shutdown)
 				shutdown()
 			}
@@ -180,7 +187,7 @@ func main() {
 		log.Println("Shutting down gracefully")
 		go shutdown()
 
-		fmt.Println("\nsend SIGINT again to kill")
+		fmt.Println("send SIGINT again to kill")
 		<-intChan
 
 		os.Exit(1)

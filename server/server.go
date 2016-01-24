@@ -16,16 +16,18 @@ import (
 type Server struct {
 	regEndpoint      string
 	validateEndpoint string
+	fileEndpoint     string
 	port             int
 	listener         net.Listener
 	r                *redis.Redis
 }
 
 // New returns new server.
-func New(regEndpoint, validateEndpoint string, port int, r *redis.Redis) *Server {
+func New(regEndpoint, validateEndpoint, fileEndpoint string, port int, r *redis.Redis) *Server {
 	return &Server{
 		regEndpoint:      regEndpoint,
 		validateEndpoint: validateEndpoint,
+		fileEndpoint:     fileEndpoint,
 		port:             port,
 		r:                r,
 	}
@@ -107,10 +109,36 @@ func (s *Server) validateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
+	action := r.FormValue("action")
+	hash := r.FormValue("hash")
+	user := r.FormValue("user")
+
+	var failed bool
+
+	switch action {
+	case "add":
+		redisErr := s.r.AddFileHash(user, hash)
+		if redisErr != nil {
+			returnError(redisErr.Error(), http.StatusBadRequest, w)
+			failed = true
+		}
+	default:
+		returnError("invalid action", http.StatusBadRequest, w)
+		failed = true
+	}
+	if failed {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Start starts the HTTP server.
 func (s *Server) Start() (err error) {
 	http.HandleFunc(s.regEndpoint, s.regHandler)
 	http.HandleFunc(s.validateEndpoint, s.validateHandler)
+	http.HandleFunc(s.fileEndpoint, s.fileHandler)
 
 	s.listener, err = net.Listen("tcp", ":"+strconv.Itoa(s.port))
 	if err != nil {

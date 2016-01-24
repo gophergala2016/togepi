@@ -6,6 +6,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/gophergala2016/togepi/meta"
 )
 
 // Listener contains TCP listener's data.
@@ -13,10 +15,11 @@ type Listener struct {
 	tcpListener *net.TCPListener
 	done        chan bool
 	connections map[string]*net.TCPConn
+	md          *meta.Data
 }
 
 // NewListener returns new TCP listener.
-func NewListener(port int) (l *Listener, err error) {
+func NewListener(port int, md *meta.Data) (l *Listener, err error) {
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", ":"+strconv.Itoa(port))
 	if err != nil {
@@ -33,6 +36,7 @@ func NewListener(port int) (l *Listener, err error) {
 		tcpListener: tcpListener,
 		done:        make(chan bool),
 		connections: make(map[string]*net.TCPConn),
+		md:          md,
 	}
 
 	return
