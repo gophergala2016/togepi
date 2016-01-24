@@ -37,7 +37,7 @@ file file saved
 Executing Togepi with the -a flag will output a list of shared hashes along with the corresponding file paths.
 ```bash
 $ togepi -a
-e9ad9cf77403719f4e06351355c1781a1ebe57089e88ac452b892dfea9819fb5a1a937bc34d2934189cf4355249d0186 /run/media/alex.ant/HDD/Music/01-chickenfoot-avenida_revolution.mp3
-e9ad9cf77403719f4e06351355c1781a2a598a78d927195e7ee33d7d62f1e564b080366aa1bc1e4c6ca5b01c838adcf3 /home/alex.ant/demo/02.It's Electric.mp3
-e9ad9cf77403719f4e06351355c1781aeb9aa78ab0ed0d42893eeed69da96fdbe9dc28261c09116a19b1c4868a9aa24c /home/alex.ant/LICENSE
+2b892dfea9819fb5a1a937bc34d2934189cf4355249d0186 /run/media/alex.ant/HDD/Music/01-chickenfoot-avenida_revolution.mp3
+7ee33d7d62f1e564b080366aa1bc1e4c6ca5b01c838adcf3 /home/alex.ant/demo/02.It's Electric.mp3
+893eeed69da96fdbe9dc28261c09116a19b1c4868a9aa24c /home/alex.ant/LICENSE
 ```
