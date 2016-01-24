@@ -29,14 +29,14 @@ By default it will connect to the server running in my cloud, so no need to set 
 To share a file simply provide it's path (can be relative or full) as a single argument
 ```bash
 $ togepi path/to/file
-e9ad9cf77403719f4e06351355c1781a1ebe57089e88ac452b892dfea9819fb5a1a937bc34d2934189cf4355249d0186
+e9ad9cf77403719f4e06351355c1781a1ebe57
 ```
 
 #### Pulling files
 
 It can't be easier than to provide the "Share Hash"
 ```bash
-$ togepi e9ad9cf77403719f4e06351355c1781a1ebe57089e88ac452b892dfea9819fb5a1a937bc34d2934189cf4355249d0186
+$ togepi e9ad9cf77403719f4e06351355c1781a1ebe57
 file file saved
 ```
 
