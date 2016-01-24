@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	httpServerAddress = flag.String("http-host", "http://127.0.0.1:8011", "togepi server's host")
+	httpServerAddress = flag.String("http-host", "127.0.0.1:8011", "togepi server's host (without protocol)")
 	tcpServerAddress  = flag.String("tcp-host", "127.0.0.1:8012", "togepi server's host")
 	socketPort        = flag.Int("socket-port", 8013, "a port to be used for local inter-process communication")
 	httpPort          = flag.Int("http-port", 8011, "HTTP server's port")
@@ -27,6 +27,7 @@ var (
 	redisDB           = flag.Int("redis-db", 0, "Redis DB")
 
 	serverMode = flag.Bool("server", false, "run in server mode")
+	daemonMode = flag.Bool("start", false, "run in daemon mode")
 	showShared = flag.Bool("a", false, "List all shared files")
 )
 
@@ -86,7 +87,7 @@ func main() {
 		if len(os.Args) > 1 {
 			md = meta.NewData()
 
-			if os.Args[1] == "start" {
+			if *daemonMode {
 				startDaemon()
 			} else {
 				filePath := os.Args[1]

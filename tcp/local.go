@@ -81,7 +81,7 @@ func (l *Listener) AcceptConnections(httpServerAddress, userID, userKey string) 
 			case "SHARE":
 				pathHash := util.Encrypt(loadData, userKey)
 				l.md.AddFile(pathHash, loadData)
-				resp, procErr := http.Get(httpServerAddress + "/file?action=add&hash=" + pathHash + "&user=" + userID)
+				resp, procErr := http.Get("http://" + httpServerAddress + "/file?action=add&hash=" + pathHash + "&user=" + userID)
 				if procErr != nil {
 					procFailed = true
 					break

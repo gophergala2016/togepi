@@ -57,7 +57,7 @@ func startDaemon() {
 	case os.IsNotExist(configStatErr):
 		log.Println("first start, generating configuration")
 
-		resp, respErr := http.Get(*httpServerAddress + "/register")
+		resp, respErr := http.Get("http://" + *httpServerAddress + "/register")
 		util.CheckError(respErr, shutdown)
 		body, bodyErr := ioutil.ReadAll(resp.Body)
 		util.CheckError(bodyErr, shutdown)
@@ -76,7 +76,7 @@ func startDaemon() {
 		readDataErr := md.ReadDataFile(configPath)
 		util.CheckError(readDataErr, shutdown)
 
-		resp, respErr := http.Get(*httpServerAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
+		resp, respErr := http.Get("http://" + *httpServerAddress + "/validate?uid=" + md.UserID + "&ukey=" + md.UserKey)
 		util.CheckError(respErr, shutdown)
 
 		if resp.StatusCode != http.StatusOK {
@@ -102,7 +102,7 @@ func startDaemon() {
 }
 
 func requestFile(shareHash string) (err error) {
-	resp, respErr := http.Get(*httpServerAddress + "/file?action=request&sh=" + shareHash)
+	resp, respErr := http.Get("http://" + *httpServerAddress + "/file?action=request&sh=" + shareHash)
 	util.CheckError(respErr, shutdown)
 	body, bodyErr := ioutil.ReadAll(resp.Body)
 	util.CheckError(bodyErr, shutdown)
