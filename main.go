@@ -19,7 +19,6 @@ import (
 )
 
 var (
-	serverMode        = flag.Bool("server", false, "run in server mode")
 	httpServerAddress = flag.String("http-host", "http://127.0.0.1:8011", "togepi server's host")
 	tcpServerAddress  = flag.String("tcp-host", "127.0.0.1:8012", "togepi server's host")
 	socketPort        = flag.Int("socket-port", 8013, "a port to be used for local inter-process communication")
@@ -27,6 +26,9 @@ var (
 	tcpPort           = flag.Int("tcp-port", 8012, "TCP server's port")
 	redisHost         = flag.String("redis-host", "127.0.0.1:6379", "Redis host address")
 	redisDB           = flag.Int("redis-db", 0, "Redis DB")
+
+	serverMode = flag.Bool("server", false, "run in server mode")
+	showShared = flag.Bool("a", false, "List all shared files")
 )
 
 var (
@@ -143,13 +145,7 @@ func startDaemon() {
 }
 
 func shareFile(filePath string) (err error) {
-	configPath := os.Getenv("HOME") + "/.togepi/data"
-	_, err = os.Stat(configPath)
-	if err != nil {
-		return
-	}
-
-	err = md.ReadDataFile(configPath)
+	err = readConfig()
 	if err != nil {
 		return
 	}
@@ -165,9 +161,36 @@ func shareFile(filePath string) (err error) {
 	return
 }
 
+func readConfig() (err error) {
+	configPath := os.Getenv("HOME") + "/.togepi/data"
+	_, err = os.Stat(configPath)
+	if err != nil {
+		return
+	}
+
+	err = md.ReadDataFile(configPath)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func main() {
 	if *serverMode {
 		startServer()
+	} else if *showShared {
+		md = meta.NewData()
+		err := readConfig()
+		if err != nil {
+			return
+		}
+
+		for k, v := range md.Files {
+			fmt.Println(md.UserID+k, v.Path)
+		}
+
+		shutdown()
 	} else {
 		if len(os.Args) > 1 {
 			md = meta.NewData()
