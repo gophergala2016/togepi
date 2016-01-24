@@ -135,8 +135,9 @@ func startDaemon() {
 	cl.HandleServerCommands()
 }
 
-func shareFile() {
+func shareFile(filePath string) (err error) {
 
+	return
 }
 
 func main() {
@@ -144,10 +145,24 @@ func main() {
 	if *serverMode {
 		startServer()
 	} else {
-		if len(os.Args) > 1 && os.Args[1] == "start" {
-			startDaemon()
+		if len(os.Args) > 1 {
+			if os.Args[1] == "start" {
+				startDaemon()
+			} else {
+				filePath := os.Args[1]
+
+				fileStat, fileStatErr := os.Stat(filePath)
+				util.CheckError(fileStatErr, shutdown)
+
+				if fileStat.IsDir() {
+					util.CheckError(errors.New(filePath+" is a directory"), shutdown)
+				}
+
+				shareErr := shareFile(filePath)
+				util.CheckError(shareErr, shutdown)
+			}
 		} else {
-			shareFile()
+			util.CheckError(errors.New("please provide required arguments"), shutdown)
 		}
 	}
 
