@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	httpServerAddress = flag.String("http-host", "127.0.0.1:8011", "togepi server's host (without protocol)")
-	tcpServerAddress  = flag.String("tcp-host", "127.0.0.1:8012", "togepi server's host")
+	httpServerAddress = flag.String("http-host", "185.73.39.98:8011", "togepi server's host (without protocol)")
+	tcpServerAddress  = flag.String("tcp-host", "185.73.39.98:8012", "togepi server's host")
 	socketPort        = flag.Int("socket-port", 8013, "a port to be used for local inter-process communication")
 	httpPort          = flag.Int("http-port", 8011, "HTTP server's port")
 	tcpPort           = flag.Int("tcp-port", 8012, "TCP server's port")
